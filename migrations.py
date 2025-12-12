@@ -5,6 +5,7 @@ import duckdb
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import plotly.graph_objects as go
 
 base_time = os.environ['BASE_TIME']
 
@@ -95,6 +96,58 @@ def main():
     plt.savefig('migrations.png', dpi=150, facecolor='white')
     print("Saved: migrations.png")
     plt.close()
+
+    # Sankey diagram
+    # Nodes: before categories, after categories (excluding Gone)
+    after_cats_no_gone = [c for c in after_cats if c != 'Gone']
+
+    node_labels = ([c for c in before_cats] +
+                   [c for c in after_cats_no_gone])
+
+    n_before = len(before_cats)
+
+    # Build links from matrix (skip Gone)
+    sources = []
+    targets = []
+    values = []
+    colors = []
+    for i, before in enumerate(before_cats):
+        for j, after in enumerate(after_cats):
+            if matrix[i, j] > 0 and after != 'Gone':
+                sources.append(i)
+                targets.append(n_before + after_cats_no_gone.index(after))
+                # Fade unchanged flows, highlight migrations
+                if before == after:
+                    colors.append("rgba(200, 200, 200, 0.15)")  # very faint
+                else:
+                    colors.append("rgba(247, 147, 26, 0.6)")  # orange
+                values.append(int(matrix[i, j]))
+
+    fig = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=node_labels,
+            color="#f7931a"
+        ),
+        link=dict(
+            source=sources,
+            target=targets,
+            value=values,
+            color=colors
+        )
+    )])
+
+    fig.update_layout(
+        title_text="Node User Agent Migrations",
+        font_size=12,
+        width=1000,
+        height=700
+    )
+
+    fig.write_image("migrations_sankey.png", scale=2)
+    print("Saved: migrations_sankey.png")
 
 
 if __name__ == '__main__':
