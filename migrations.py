@@ -11,7 +11,7 @@ base_time = os.environ['BASE_TIME']
 
 CATEGORIZE_SQL = '''
     CASE
-        WHEN ua LIKE '%Knots%UASF-BIP110%' THEN 'UASF-BIP110'
+        WHEN ua LIKE '%Knots%UASF-BIP110%' THEN 'BIP-110'
         WHEN ua LIKE '%Knots%' THEN 'Knots'
         WHEN ua LIKE '/Satoshi:30.%' THEN 'Core30'
         WHEN ua LIKE '/Satoshi:29.%' OR ua LIKE '/Satoshi:28.%' THEN 'Core28-29'
@@ -51,8 +51,8 @@ def main():
     ''').fetchdf()
 
     # Build transition matrix
-    categories = ['Core30', 'Core28-29', 'OlderCore', 'Knots', 'UASF-BIP110', 'Other', 'New', 'Gone']
-    before_cats = [c for c in categories if c != 'Gone']
+    categories = ['Core30', 'Core28-29', 'OlderCore', 'Knots', 'BIP-110', 'Other', 'New', 'Gone']
+    before_cats = [c for c in categories if c not in ('Gone', 'BIP-110')]
     after_cats = [c for c in categories if c != 'New']
     matrix = np.zeros((len(before_cats), len(after_cats)), dtype=int)
 
@@ -62,13 +62,28 @@ def main():
         matrix[before_idx, after_idx] += 1
 
     # Print transition table
+    BOLD = "\033[1m"
+    RESET = "\033[0m"
+    col_width = max(len(c) for c in categories) + 2
     print("Transition matrix (rows=before, cols=after)")
-    print("=" * 70)
-    header = "".ljust(12) + "".join(c.rjust(10) for c in after_cats)
-    print(header)
+    print("=" * (col_width + col_width * len(after_cats)))
+    header_parts = ["".ljust(col_width)]
+    for c in after_cats:
+        if c == 'BIP-110':
+            header_parts.append(f"{BOLD}{c.rjust(col_width)}{RESET}")
+        else:
+            header_parts.append(c.rjust(col_width))
+    print("".join(header_parts))
     for i, cat in enumerate(before_cats):
-        row_str = cat.ljust(12) + "".join(str(matrix[i, j]).rjust(10) for j in range(len(after_cats)))
-        print(row_str)
+        row_parts = [cat.ljust(col_width)]
+        for j, after in enumerate(after_cats):
+            val = matrix[i, j]
+            cell = "" if val == 0 else str(val)
+            if after == 'BIP-110' and val > 0:
+                row_parts.append(f"{BOLD}{cell.rjust(col_width)}{RESET}")
+            else:
+                row_parts.append(cell.rjust(col_width))
+        print("".join(row_parts))
     print()
 
     # Plot heatmap
