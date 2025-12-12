@@ -78,11 +78,13 @@ def main():
         row_parts = [cat.ljust(col_width)]
         for j, after in enumerate(after_cats):
             val = matrix[i, j]
-            cell = "" if val == 0 else str(val)
-            if after == 'BIP-110' and val > 0:
-                row_parts.append(f"{BOLD}{cell.rjust(col_width)}{RESET}")
+            if val == 0:
+                cell = "·".rjust(col_width)
+            elif after == 'BIP-110':
+                cell = f"{BOLD}{str(val).rjust(col_width)}{RESET}"
             else:
-                row_parts.append(cell.rjust(col_width))
+                cell = str(val).rjust(col_width)
+            row_parts.append(cell)
         print("".join(row_parts))
     print()
 
