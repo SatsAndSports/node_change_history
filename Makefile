@@ -26,23 +26,5 @@ check:
 	sqlite3 nodes_history.sqlite "PRAGMA integrity_check;"
 
 top_agents: .venv
-	.venv/bin/python -c "\
-import duckdb, os; \
-base_time = os.environ['BASE_TIME']; \
-conn = duckdb.connect(); \
-conn.execute('INSTALL sqlite; LOAD sqlite;'); \
-df = conn.execute(f''' \
-    WITH latest AS ( \
-        SELECT address, port, user_agent, \
-               ROW_NUMBER() OVER (PARTITION BY address, port ORDER BY timestamp DESC) as rn \
-        FROM sqlite_scan(\"nodes_history.sqlite\", \"nodes\") \
-        WHERE timestamp < {base_time} AND user_agent IS NOT NULL \
-    ) \
-    SELECT user_agent, COUNT(*) as count \
-    FROM latest WHERE rn = 1 \
-    GROUP BY user_agent \
-    ORDER BY count DESC \
-    LIMIT 20 \
-''').fetchdf(); \
-print(df.to_string(index=False))"
+	.venv/bin/python top_agents.py
 
