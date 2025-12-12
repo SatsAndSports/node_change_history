@@ -1,6 +1,6 @@
 export BASE_TIME := 1765277892
 
-.PHONY: help venv sync_data analyze check top_agents
+.PHONY: help venv sync_data analyze check top_agents migrations
 
 help:
 	@echo "make venv    - create virtualenv and install dependencies"
@@ -27,4 +27,7 @@ check:
 
 top_agents: .venv
 	.venv/bin/python top_agents.py
+
+migrations: .venv
+	.venv/bin/python migrations.py
 
